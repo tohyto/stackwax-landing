@@ -126,6 +126,13 @@ body {
 
 .email-form input::placeholder { color: #555; }
 .email-form input:focus { box-shadow: 0 0 0 2px rgba(8,143,251,0.3); }
+.email-form input:-webkit-autofill,
+.email-form input:-webkit-autofill:hover,
+.email-form input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #000 inset;
+  -webkit-text-fill-color: #999;
+  border: 1px solid #000;
+}
 
 .email-form button {
   padding: 0.75rem 1.2rem;
