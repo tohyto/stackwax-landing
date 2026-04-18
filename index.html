@@ -644,10 +644,28 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function saveEmail(email) {
+  // 1. Save to Supabase (your waitlist record)
   const { error } = await sb.from('waitlist').insert({ email });
-  if (error && error.code === '23505') return true;
-  if (error) { console.error('Waitlist error:', error); return false; }
-  return true;
+  const supabaseOk = !error || error.code === '23505';
+  if (error && error.code !== '23505') {
+    console.error('Waitlist error:', error);
+  }
+
+  // 2. Ping Loops to trigger the welcome email
+  try {
+    await fetch('https://app.loops.so/api/newsletter-form/cmnx1dxq106ij0iyv6h8ytuor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        email: email,
+        userGroup: 'waitlist'
+      })
+    });
+  } catch (e) {
+    console.error('Loops error:', e);
+  }
+
+  return supabaseOk;
 }
 
 async function handleSubmit(e) {
