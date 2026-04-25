@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   }
   
   try {
-    const url = `https://api.getsongbpm.com/${encodeURIComponent(type)}/?api_key=${apiKey}&lookup=${encodeURIComponent(lookup)}`;
+    const url = `https://api.getsong.co/${encodeURIComponent(type)}/?api_key=${apiKey}&lookup=${encodeURIComponent(lookup)}`;
     const response = await fetch(url);
     const data = await response.json();
     
