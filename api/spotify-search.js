@@ -1,8 +1,5 @@
-
 // api/spotify-search.js
-// Searches Spotify for tracks. Used to look up BPM/tempo metadata.
-// Frontend passes a query string, we forward to Spotify with a server-side token.
-
+// Searches Spotify and includes artist genres in the response.
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -22,7 +19,6 @@ export default async function handler(req, res) {
   }
   
   try {
-    // Get an access token first
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
     const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
@@ -35,7 +31,6 @@ export default async function handler(req, res) {
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok) return res.status(tokenRes.status).json(tokenData);
     
-    // Now run the search
     const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=${type}&limit=${limit}`;
     const searchRes = await fetch(searchUrl, {
       headers: { 'Authorization': `Bearer ${tokenData.access_token}` },
@@ -43,8 +38,9 @@ export default async function handler(req, res) {
     const searchData = await searchRes.json();
     if (!searchRes.ok) return res.status(searchRes.status).json(searchData);
     
-    return res.status(200).json(searchData);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-}
+    // Enrich first track with artist genres
+    if (searchData.tracks?.items?.[0]?.artists?.[0]?.id) {
+      const artistId = searchData.tracks.items[0].artists[0].id;
+      try {
+        const artistRes = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+          headers: { 'Authorization': `Bearer ${tokenData.access_token}` },
