@@ -1,6 +1,16 @@
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
+  // CORS headers — allow any origin (Capacitor uses capacitor://localhost)
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // Preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -11,28 +21,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Read the raw multipart body from the client
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const body = Buffer.concat(chunks);
-
-    // Get the original content-type (multipart boundary)
     const contentType = req.headers["content-type"];
     if (!contentType || !contentType.includes("multipart/form-data")) {
       return res.status(400).json({ error: "Expected multipart/form-data" });
     }
 
-    // Inject api_token into the multipart body by appending a new part
-    // before forwarding. Easier approach: parse the form, add token, re-send.
-    // Simplest: the client already sends api_token in the form. We just need
-    // to forward to AudD. But for security, the client should NOT send
-    // api_token — we add it server-side.
-    //
-    // Cleanest way: use Node's native fetch + FormData reconstruction.
-    // Since we have the raw body and it's already a valid multipart payload,
-    // we forward the file part and re-add api_token via a new FormData.
+    // Read raw body
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const body = Buffer.concat(chunks);
 
-    // Forward as-is to AudD (client sends file; we add token via URL param)
+    // Forward to AudD with token in URL
     const url = `https://api.audd.io/?api_token=${encodeURIComponent(token)}`;
     const auddRes = await fetch(url, {
       method: "POST",
@@ -40,9 +39,16 @@ export default async function handler(req, res) {
       body
     });
 
-    const data = await auddRes.json();
-    return res.status(auddRes.status).json(data);
+    const text = await auddRes.text();
+    
+    // Try to parse as JSON, fall back to text
+    try {
+      const data = JSON.parse(text);
+      return res.status(auddRes.status).json(data);
+    } catch {
+      return res.status(auddRes.status).json({ error: "Invalid response from AudD", body: text });
+    }
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: "Proxy error", message: err.message, stack: err.stack });
   }
 }
