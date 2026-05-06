@@ -7,64 +7,61 @@ module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  // Trim whitespace from env vars (defensive)
   const host = (process.env.ACRCLOUD_HOST || "").trim();
-  const accessKey = (process.env.ACRCLOUD_ACCESS_KEY || "").trim();
-  const secretKey = (process.env.ACRCLOUD_SECRET_KEY || "").trim();
+  const access_key = (process.env.ACRCLOUD_ACCESS_KEY || "").trim();
+  const access_secret = (process.env.ACRCLOUD_SECRET_KEY || "").trim();
 
-  const debug = {
-    hostLen: host.length,
-    hostStart: host.slice(0, 12),
-    accessLen: accessKey.length,
-    accessStart: accessKey.slice(0, 6),
-    secretLen: secretKey.length,
-    secretStart: secretKey.slice(0, 4),
-  };
-
-  if (!host || !accessKey || !secretKey) {
-    return res.status(500).json({ error: "env vars missing", debug });
+  if (!host || !access_key || !access_secret) {
+    return res.status(500).json({ error: "env vars missing" });
   }
 
   try {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
-    const audioBuffer = Buffer.concat(chunks);
+    const sample_bytes = Buffer.concat(chunks);
 
-    if (audioBuffer.length === 0) {
-      return res.status(400).json({ error: "empty audio body", debug });
+    if (sample_bytes.length === 0) {
+      return res.status(400).json({ error: "empty audio body" });
     }
 
-    const httpMethod = "POST";
-    const httpUri = "/v1/identify";
-    const dataType = "audio";
-    const signatureVersion = "1";
-    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const data_type = "audio";
+    const signature_version = "1";
+    const timestamp = Math.floor(Date.now() / 1000);
 
-    const stringToSign = [httpMethod, httpUri, accessKey, dataType, signatureVersion, timestamp].join("\n");
+    const string_to_sign = "POST\n/v1/identify\n" + access_key + "\n" + data_type + "\n" + signature_version + "\n" + timestamp;
 
     const signature = crypto
-      .createHmac("sha1", Buffer.from(secretKey, "utf-8"))
-      .update(Buffer.from(stringToSign, "utf-8"))
-      .digest("base64");
-
-    debug.stringToSignLen = stringToSign.length;
-    debug.signaturePrefix = signature.slice(0, 8);
-    debug.timestamp = timestamp;
+      .createHmac("sha1", access_secret)
+      .update(string_to_sign)
+      .digest()
+      .toString("base64");
 
     const form = new FormData();
-    form.append("access_key", accessKey);
-    form.append("sample_bytes", audioBuffer.length.toString());
-    form.append("sample", new Blob([audioBuffer], { type: "audio/webm" }), "sample.webm");
-    form.append("timestamp", timestamp);
+    form.append("sample", new Blob([sample_bytes]), "sample");
+    form.append("sample_bytes", sample_bytes.length);
+    form.append("access_key", access_key);
+    form.append("data_type", data_type);
+    form.append("signature_version", signature_version);
     form.append("signature", signature);
-    form.append("data_type", dataType);
-    form.append("signature_version", signatureVersion);
+    form.append("timestamp", timestamp);
 
-    const r = await fetch(`https://${host}/v1/identify`, { method: "POST", body: form });
+    const r = await fetch(`https://${host}/v1/identify`, {
+      method: "POST",
+      body: form,
+    });
+
     const data = await r.json();
 
-    return res.status(200).json({ ...data, debug, audioBytes: audioBuffer.length });
+    return res.status(200).json({
+      ...data,
+      debug: {
+        stringToSign: string_to_sign,
+        timestamp,
+        signature,
+        sampleBytes: sample_bytes.length,
+      },
+    });
   } catch (e) {
-    return res.status(500).json({ error: e.message, debug });
+    return res.status(500).json({ error: e.message });
   }
 };
