@@ -21,7 +21,11 @@ module.exports = async function handler(req, res) {
     for await (const chunk of req) chunks.push(chunk);
     const audioBuffer = Buffer.concat(chunks);
 
-    // Build the HMAC-SHA1 signature
+    if (audioBuffer.length === 0) {
+      return res.status(400).json({ error: "Empty audio body" });
+    }
+
+    // Build the HMAC-SHA1 signature per ACRCloud spec
     const httpMethod = "POST";
     const httpUri = "/v1/identify";
     const dataType = "audio";
@@ -29,23 +33,28 @@ module.exports = async function handler(req, res) {
     const timestamp = Math.floor(Date.now() / 1000).toString();
 
     const stringToSign = [
-      httpMethod, httpUri, accessKey, dataType, signatureVersion, timestamp
+      httpMethod,
+      httpUri,
+      accessKey,
+      dataType,
+      signatureVersion,
+      timestamp,
     ].join("\n");
 
     const signature = crypto
       .createHmac("sha1", secretKey)
-      .update(Buffer.from(stringToSign, "utf-8"))
+      .update(stringToSign)
       .digest("base64");
 
-    // Build multipart form-data manually (fetch in Node 18+ supports FormData with Blob)
+    // Build multipart form-data
     const form = new FormData();
-    form.append("sample", new Blob([audioBuffer]), "sample.webm");
-    form.append("sample_bytes", audioBuffer.length.toString());
     form.append("access_key", accessKey);
+    form.append("sample_bytes", audioBuffer.length.toString());
+    form.append("sample", new Blob([audioBuffer], { type: "audio/webm" }), "sample.webm");
+    form.append("timestamp", timestamp);
+    form.append("signature", signature);
     form.append("data_type", dataType);
     form.append("signature_version", signatureVersion);
-    form.append("signature", signature);
-    form.append("timestamp", timestamp);
 
     const r = await fetch(`https://${host}/v1/identify`, {
       method: "POST",
@@ -53,6 +62,17 @@ module.exports = async function handler(req, res) {
     });
 
     const data = await r.json();
+
+    // DEV: log signature inputs so we can debug
+    console.log("ACR debug:", {
+      stringToSign,
+      timestamp,
+      sigPrefix: signature.slice(0, 8),
+      hostUsed: host,
+      audioBytes: audioBuffer.length,
+      acrStatus: data?.status,
+    });
+
     return res.status(200).json(data);
   } catch (e) {
     return res.status(500).json({ error: e.message });
