@@ -7,17 +7,18 @@ module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const host = process.env.ACRCLOUD_HOST;
-  const accessKey = process.env.ACRCLOUD_ACCESS_KEY;
-  const secretKey = process.env.ACRCLOUD_SECRET_KEY;
+  // Trim whitespace from env vars (defensive)
+  const host = (process.env.ACRCLOUD_HOST || "").trim();
+  const accessKey = (process.env.ACRCLOUD_ACCESS_KEY || "").trim();
+  const secretKey = (process.env.ACRCLOUD_SECRET_KEY || "").trim();
 
   const debug = {
-    hostLen: host?.length || 0,
-    hostStart: host?.slice(0, 12) || "",
-    accessLen: accessKey?.length || 0,
-    accessStart: accessKey?.slice(0, 6) || "",
-    secretLen: secretKey?.length || 0,
-    secretStart: secretKey?.slice(0, 4) || "",
+    hostLen: host.length,
+    hostStart: host.slice(0, 12),
+    accessLen: accessKey.length,
+    accessStart: accessKey.slice(0, 6),
+    secretLen: secretKey.length,
+    secretStart: secretKey.slice(0, 4),
   };
 
   if (!host || !accessKey || !secretKey) {
@@ -40,7 +41,15 @@ module.exports = async function handler(req, res) {
     const timestamp = Math.floor(Date.now() / 1000).toString();
 
     const stringToSign = [httpMethod, httpUri, accessKey, dataType, signatureVersion, timestamp].join("\n");
-    const signature = crypto.createHmac("sha1", secretKey).update(stringToSign).digest("base64");
+
+    const signature = crypto
+      .createHmac("sha1", Buffer.from(secretKey, "utf-8"))
+      .update(Buffer.from(stringToSign, "utf-8"))
+      .digest("base64");
+
+    debug.stringToSignLen = stringToSign.length;
+    debug.signaturePrefix = signature.slice(0, 8);
+    debug.timestamp = timestamp;
 
     const form = new FormData();
     form.append("access_key", accessKey);
