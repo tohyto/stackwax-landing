@@ -26,18 +26,18 @@ module.exports = async function handler(req, res) {
 
     const data_type = "audio";
     const signature_version = "1";
-    const timestamp = Math.floor(Date.now() / 1000);
+    const timestamp = Date.now() / 1000;  // FLOAT, matches ACR's official examples
 
-    const string_to_sign = "POST\n/v1/identify\n" + access_key + "\n" + data_type + "\n" + signature_version + "\n" + timestamp;
+    const string_to_sign = ["POST", "/v1/identify", access_key, data_type, signature_version, timestamp].join("\n");
 
     const signature = crypto
       .createHmac("sha1", access_secret)
-      .update(string_to_sign)
+      .update(Buffer.from(string_to_sign, "utf-8"))
       .digest()
       .toString("base64");
 
     const form = new FormData();
-    form.append("sample", new Blob([sample_bytes]), "sample");
+    form.append("sample", new Blob([sample_bytes], { type: "application/octet-stream" }), "sample.bin");
     form.append("sample_bytes", sample_bytes.length);
     form.append("access_key", access_key);
     form.append("data_type", data_type);
@@ -54,12 +54,7 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       ...data,
-      debug: {
-        stringToSign: string_to_sign,
-        timestamp,
-        signature,
-        sampleBytes: sample_bytes.length,
-      },
+      debug: { stringToSign: string_to_sign, timestamp, signature, sampleBytes: sample_bytes.length },
     });
   } catch (e) {
     return res.status(500).json({ error: e.message });
