@@ -11,42 +11,37 @@ module.exports = async function handler(req, res) {
   const accessKey = process.env.ACRCLOUD_ACCESS_KEY;
   const secretKey = process.env.ACRCLOUD_SECRET_KEY;
 
+  const debug = {
+    hostLen: host?.length || 0,
+    hostStart: host?.slice(0, 12) || "",
+    accessLen: accessKey?.length || 0,
+    accessStart: accessKey?.slice(0, 6) || "",
+    secretLen: secretKey?.length || 0,
+    secretStart: secretKey?.slice(0, 4) || "",
+  };
+
   if (!host || !accessKey || !secretKey) {
-    return res.status(500).json({ error: "ACRCloud env vars missing" });
+    return res.status(500).json({ error: "env vars missing", debug });
   }
 
   try {
-    // Read the raw audio body (binary)
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     const audioBuffer = Buffer.concat(chunks);
 
     if (audioBuffer.length === 0) {
-      return res.status(400).json({ error: "Empty audio body" });
+      return res.status(400).json({ error: "empty audio body", debug });
     }
 
-    // Build the HMAC-SHA1 signature per ACRCloud spec
     const httpMethod = "POST";
     const httpUri = "/v1/identify";
     const dataType = "audio";
     const signatureVersion = "1";
     const timestamp = Math.floor(Date.now() / 1000).toString();
 
-    const stringToSign = [
-      httpMethod,
-      httpUri,
-      accessKey,
-      dataType,
-      signatureVersion,
-      timestamp,
-    ].join("\n");
+    const stringToSign = [httpMethod, httpUri, accessKey, dataType, signatureVersion, timestamp].join("\n");
+    const signature = crypto.createHmac("sha1", secretKey).update(stringToSign).digest("base64");
 
-    const signature = crypto
-      .createHmac("sha1", secretKey)
-      .update(stringToSign)
-      .digest("base64");
-
-    // Build multipart form-data
     const form = new FormData();
     form.append("access_key", accessKey);
     form.append("sample_bytes", audioBuffer.length.toString());
@@ -56,25 +51,11 @@ module.exports = async function handler(req, res) {
     form.append("data_type", dataType);
     form.append("signature_version", signatureVersion);
 
-    const r = await fetch(`https://${host}/v1/identify`, {
-      method: "POST",
-      body: form,
-    });
-
+    const r = await fetch(`https://${host}/v1/identify`, { method: "POST", body: form });
     const data = await r.json();
 
-    // DEV: log signature inputs so we can debug
-    console.log("ACR debug:", {
-      stringToSign,
-      timestamp,
-      sigPrefix: signature.slice(0, 8),
-      hostUsed: host,
-      audioBytes: audioBuffer.length,
-      acrStatus: data?.status,
-    });
-
-    return res.status(200).json(data);
+    return res.status(200).json({ ...data, debug, audioBytes: audioBuffer.length });
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: e.message, debug });
   }
 };
