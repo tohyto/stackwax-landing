@@ -16,29 +16,24 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const sample_bytes = Buffer.concat(chunks);
-
-    if (sample_bytes.length === 0) {
-      return res.status(400).json({ error: "empty audio body" });
-    }
+    // IGNORE the audio from the app — fetch a known-good MP3 instead
+    const sampleResp = await fetch("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
+    const sample_bytes = Buffer.from(await sampleResp.arrayBuffer());
 
     const data_type = "audio";
     const signature_version = "1";
-    const timestamp = Date.now() / 1000;  // FLOAT, matches ACR's official examples
+    const timestamp = Math.floor(Date.now() / 1000).toString();
 
     const string_to_sign = ["POST", "/v1/identify", access_key, data_type, signature_version, timestamp].join("\n");
 
     const signature = crypto
       .createHmac("sha1", access_secret)
-      .update(Buffer.from(string_to_sign, "utf-8"))
-      .digest()
-      .toString("base64");
+      .update(string_to_sign)
+      .digest("base64");
 
     const form = new FormData();
-    form.append("sample", new Blob([sample_bytes], { type: "application/octet-stream" }), "sample.bin");
-    form.append("sample_bytes", sample_bytes.length);
+    form.append("sample", new Blob([sample_bytes], { type: "audio/mpeg" }), "sample.mp3");
+    form.append("sample_bytes", sample_bytes.length.toString());
     form.append("access_key", access_key);
     form.append("data_type", data_type);
     form.append("signature_version", signature_version);
@@ -54,7 +49,13 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       ...data,
-      debug: { stringToSign: string_to_sign, timestamp, signature, sampleBytes: sample_bytes.length },
+      debug: {
+        stringToSign: string_to_sign,
+        timestamp,
+        signature,
+        sampleBytes: sample_bytes.length,
+        usingTestMP3: true,
+      },
     });
   } catch (e) {
     return res.status(500).json({ error: e.message });
