@@ -27,28 +27,24 @@ module.exports = async function handler(req, res) {
     const data_type = "audio";
     const signature_version = "1";
 
-    // CRITICAL: compute the timestamp STRING once, use the SAME string everywhere
-    // Python uses str(time.time()) → "1778090123.456789"
-    // We mimic with the exact float-to-string conversion
     const ts_float = Date.now() / 1000;
-    const timestamp = String(ts_float); // "1778090123.456" — single source of truth
+    const timestamp = String(ts_float);
 
     const string_to_sign = ["POST", "/v1/identify", access_key, data_type, signature_version, timestamp].join("\n");
 
-    // ASCII encoding to match Python's behavior exactly
     const signature = crypto
       .createHmac("sha1", Buffer.from(access_secret, "ascii"))
       .update(Buffer.from(string_to_sign, "ascii"))
       .digest("base64");
 
     const form = new FormData();
-    form.append("sample", new Blob([sample_bytes], { type: "audio/mpeg" }), "sample.mp3");
+    form.append("sample", new Blob([sample_bytes], { type: "audio/wav" }), "sample.wav");
     form.append("sample_bytes", String(sample_bytes.length));
     form.append("access_key", access_key);
     form.append("data_type", data_type);
     form.append("signature_version", signature_version);
     form.append("signature", signature);
-    form.append("timestamp", timestamp);  // SAME string used in signing
+    form.append("timestamp", timestamp);
 
     const r = await fetch(`https://${host}/v1/identify`, {
       method: "POST",
