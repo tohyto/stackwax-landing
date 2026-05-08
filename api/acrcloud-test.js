@@ -26,7 +26,9 @@ module.exports = async function handler(req, res) {
 
     const data_type = "audio";
     const signature_version = "1";
-    const timestamp = String(Date.now() / 1000);
+
+    const ts_float = Date.now() / 1000;
+    const timestamp = String(ts_float);
 
     const string_to_sign = ["POST", "/v1/identify", access_key, data_type, signature_version, timestamp].join("\n");
 
@@ -35,36 +37,6 @@ module.exports = async function handler(req, res) {
       .update(Buffer.from(string_to_sign, "ascii"))
       .digest("base64");
 
-    // Build multipart body manually to match Python's requests library exactly
-    const boundary = "----stackwax" + crypto.randomBytes(8).toString("hex");
-    const CRLF = "\r\n";
-
-    const textPart = (name, value) =>
-      Buffer.from(`--${boundary}${CRLF}Content-Disposition: form-data; name="${name}"${CRLF}${CRLF}${value}${CRLF}`, "utf-8");
-
-    // File part header (matches Python requests' default for ('filename', bytes, 'mime'))
-    const fileHeader = Buffer.from(
-      `--${boundary}${CRLF}` +
-      `Content-Disposition: form-data; name="sample"; filename="sample.wav"${CRLF}` +
-      `Content-Type: audio/wav${CRLF}${CRLF}`,
-      "utf-8"
-    );
-    const fileFooter = Buffer.from(CRLF, "utf-8");
-    const closingBoundary = Buffer.from(`--${boundary}--${CRLF}`, "utf-8");
-
-    const body = Buffer.concat([
-      // File first, like Python's requests does when files= is used
-      fileHeader,
-      sample_bytes,
-      fileFooter,
-      // Then the form fields
-      textPart("access_key", access_key),
-      textPart("sample_bytes", String(sample_bytes.length)),
-      textPart("timestamp", timestamp),
-      textPart("signature", signature),
-      textPart("data_type", data_type),
-      textPart("signature_version", signature_version),
-      closingBoundary,
-    ]);
-
-    const r = await fetch(`https:/
+    const form = new FormData();
+    form.append("sample", new Blob([sample_bytes], { type: "audio/wav" }), "sample.wav");
+    form.append("sample_bytes", String
