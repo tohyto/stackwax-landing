@@ -39,4 +39,30 @@ module.exports = async function handler(req, res) {
 
     const form = new FormData();
     form.append("sample", new Blob([sample_bytes], { type: "audio/wav" }), "sample.wav");
-    form.append("sample_bytes", String
+    form.append("sample_bytes", String(sample_bytes.length));
+    form.append("access_key", access_key);
+    form.append("data_type", data_type);
+    form.append("signature_version", signature_version);
+    form.append("signature", signature);
+    form.append("timestamp", timestamp);
+
+    const r = await fetch(`https://${host}/v1/identify`, {
+      method: "POST",
+      body: form,
+    });
+
+    const data = await r.json();
+
+    return res.status(200).json({
+      ...data,
+      debug: {
+        stringToSign: string_to_sign,
+        timestamp,
+        signature,
+        sampleBytes: sample_bytes.length,
+      },
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+};
