@@ -1,0 +1,24 @@
+{
+  "name": "stackwax-landing",
+  "version": "1.0.0",
+  "description": "repo for app StackWax",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tohyto/stackwax-landing.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/tohyto/stackwax-landing/issues"
+  },
+  "homepage": "https://github.com/tohyto/stackwax-landing#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.0"
+  }
+}
