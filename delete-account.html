@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delete Account — Stackwax</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@100;300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #D9D9D9;
+  --text: #000;
+  --text-mid: #333;
+  --text-light: #555;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Roboto Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page-wrapper {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 4rem 2rem 3rem;
+}
+
+.back-link {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-light);
+  text-decoration: none;
+  margin-bottom: 3rem;
+}
+
+.back-link:hover { color: var(--text); }
+
+h1 {
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
+  font-weight: 100;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.last-updated {
+  font-size: 0.62rem;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3rem;
+}
+
+h2 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2.5rem;
+  margin-bottom: 0.8rem;
+}
+
+p, li {
+  font-size: 0.72rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--text-mid);
+  margin-bottom: 0.6rem;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 0.6rem;
+}
+
+li::before {
+  content: "— ";
+  color: var(--text-light);
+}
+
+a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover { color: var(--text-mid); }
+
+footer {
+  padding: 3rem 2rem 2rem;
+  text-align: center;
+  font-size: 0.62rem;
+  color: var(--text-light);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+footer a { color: inherit; }
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+  <a href="/" class="back-link">← Stackwax</a>
+
+  <h1>Delete Your Account</h1>
+  <p class="last-updated">Last updated: July 2026</p>
+
+  <h2>1. About this page</h2>
+  <p>This page explains how to delete your Stackwax account and the personal data associated with it. Stackwax is developed by Martin Allais, based in Barcelona, Spain. You can contact us at <a href="mailto:support@stackwax.app">support@stackwax.app</a>.</p>
+
+  <h2>2. Delete in the app</h2>
+  <p>The fastest way to delete your account is directly from Stackwax:</p>
+  <ul>
+    <li>Open the Stackwax app on iOS or Android</li>
+    <li>Tap the settings icon in the top right of the main screen</li>
+    <li>Scroll to Account and tap Delete Account</li>
+    <li>Confirm the action. Your account and data are scheduled for permanent deletion</li>
+  </ul>
+
+  <h2>3. Request by email</h2>
+  <p>If you cannot access the app, you may request account deletion by email:</p>
+  <ul>
+    <li>Send an email to <a href="mailto:support@stackwax.app">support@stackwax.app</a></li>
+    <li>Use the subject line: Account Deletion Request</li>
+    <li>Include the email address associated with your Stackwax account so we can locate it</li>
+    <li>We will confirm the deletion within 7 business days</li>
+  </ul>
+
+  <h2>4. What gets deleted</h2>
+  <p>When you delete your Stackwax account, the following data is permanently removed:</p>
+  <ul>
+    <li>Your user account, including email address and hashed password</li>
+    <li>Your entire music library, including all shelved tracks, BPM, key, and metadata</li>
+    <li>Your recognition history and records of past track lookups</li>
+    <li>Any personal identifiers linked to your account</li>
+  </ul>
+
+  <h2>5. What may be retained</h2>
+  <p>Some data may be retained for a limited period after account deletion:</p>
+  <ul>
+    <li>Anonymized aggregated usage statistics that cannot be linked back to you</li>
+    <li>Legal, tax, or fraud-prevention records where retention is required by law</li>
+    <li>Third party services such as recognition providers may retain anonymized query logs per their own retention policies. These are not linked to your Stackwax identity</li>
+  </ul>
+
+  <h2>6. Retention period</h2>
+  <p>Account deletion requests are processed within 30 days. After processing, your data is permanently removed from all active systems. Backup copies are purged within a further 30 days.</p>
+
+  <h2>7. Contact</h2>
+  <p>Martin Allais, Barcelona, Spain<br>
+  <a href="mailto:support@stackwax.app">support@stackwax.app</a><br>
+  stackwax.app</p>
+</div>
+
+<footer>
+  &copy; 2026 Stackwax. All rights reserved.
+  <p style="margin-top: 1rem;"><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></p>
+</footer>
+
+</body>
+</html>
